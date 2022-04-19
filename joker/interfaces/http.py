@@ -31,7 +31,7 @@ def dump_json_request_to_curl(method: str, url: str, data=None, aslist=False):
     return ' '.join(parts)
 
 
-class HTTPService:
+class HTTPClient:
     timeout = 30
 
     def __init__(self, base_url: str):
@@ -48,7 +48,7 @@ class HTTPService:
             return
         try:
             data = json.loads(resp.text)
-        except Exception:
+        except json.JSONDecodeError:
             traceback.print_exc()
             err('bad json from %s', resp.url)
             return
@@ -85,7 +85,8 @@ class HTTPService:
         method = method.upper()
         kwargs.setdefault('timeout', self.timeout)
         if data is not None:
-            kwargs['json'] = data
+            kwargs['data'] = json.dumps(data, default=str)
+            kwargs['headers'] = {'Content-type': 'application/json'}
         resp = requests.request(method, url, **kwargs)
         resp_data = self._load_json(resp)
         if resp_data is None:
@@ -104,7 +105,10 @@ class HTTPService:
         return self.json_request('POST', path, data=data, **kwargs)
 
 
-class HTTPServiceInterface:
+HTTPService = HTTPClient
+
+
+class HTTPClientInterface:
     def __init__(self, config: dict):
         self._upstream_config = config
 
@@ -115,6 +119,7 @@ class HTTPServiceInterface:
         base_url = self._upstream_config[service_name]
         if not path:
             return base_url
-        if path.startswith('/'):
-            path = path[1:]
         return urljoin(base_url, path)
+
+
+HTTPServiceInterface = HTTPClientInterface
