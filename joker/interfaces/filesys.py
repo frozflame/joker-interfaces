@@ -1,143 +1,35 @@
 #!/usr/bin/env python3
 # coding: utf-8
+from __future__ import annotations
 
-import base64
-import hashlib
-import mimetypes
 import os.path
-import tarfile
 import urllib.parse
-import zipfile
-from functools import cached_property
-from typing import Generator, List, Union, Iterable
+from typing import Generator
 
+from joker.filesys.archives import (
+    Archive, TarArchive, ZipArchive,
+)
+from joker.filesys.utils import (
+    read_as_chunks, compute_checksum, checksum, checksum_hexdigest,
+    b64_encode_data_url, b64_encode_local_file,
+)
 
-def read_as_chunks(path: str, length=-1, offset=0, chunksize=65536) \
-        -> Generator[bytes, None, None]:
-    if length == 0:
-        return
-    if length < 0:
-        length = float('inf')
-    chunksize = min(chunksize, length)
-    with open(path, 'rb') as fin:
-        fin.seek(offset)
-        while chunksize:
-            chunk = fin.read(chunksize)
-            if not chunk:
-                break
-            yield chunk
-            length -= chunksize
-            chunksize = min(chunksize, length)
+_names = [
+    read_as_chunks, compute_checksum, checksum, checksum_hexdigest,
+    b64_encode_data_url, b64_encode_local_file,
+    Archive, TarArchive, ZipArchive,
+]
 
+_warning = """\
+joker.interfaces.filesys is deprecated, 
+please use joker.filesys instead.
+"""
 
-def compute_checksum(path_or_chunks: Union[str, Iterable[bytes]], algo='sha1'):
-    hashobj = hashlib.new(algo) if isinstance(algo, str) else algo
-    # path_or_chunks:str - a path
-    if isinstance(path_or_chunks, str):
-        chunks = read_as_chunks(path_or_chunks)
-    else:
-        chunks = path_or_chunks
-    for chunk in chunks:
-        hashobj.update(chunk)
-    return hashobj
-
-
-def checksum(path: str, algo='sha1', length=-1, offset=0):
-    chunks = read_as_chunks(path, length=length, offset=offset)
-    return compute_checksum(chunks, algo=algo)
-
-
-def checksum_hexdigest(path: str, algo='sha1', length=-1, offset=0):
-    hashobj = checksum(path, algo=algo, length=-1, offset=0)
-    return hashobj.hexdigest()
-
-
-def b64_encode_data_url(mediatype: str, content: bytes):
-    b64 = base64.b64encode(content).decode('ascii')
-    return 'data:{};base64,{}'.format(mediatype, b64)
-
-
-def b64_encode_local_file(path: str):
-    mediatype = mimetypes.guess_type(path)[0]
-    with open(path, 'rb') as fin:
-        return b64_encode_data_url(mediatype, fin.read())
-
-
-class Archive:
-    @cached_property
-    def inner_paths(self) -> List[str]:
-        raise NotImplementedError
-
-    @cached_property
-    def entry_path(self) -> str:
-        paths = [p for p in self.inner_paths if p.endswith('index.html')]
-        if not paths:
-            return ''
-        return min(paths, key=lambda s: len(s))
-
-    def extract_as_bytes(self, inner_path: str) -> bytes:
-        raise NotImplementedError
-
-    def open_inner_file(self, inner_path: str):
-        raise NotImplementedError
-
-    @staticmethod
-    def open(path: str) -> 'Archive':
-        if path.endswith('.zip'):
-            return ZipArchive(path)
-        tar_suffixes = ['.tar', '.tgz', '.tar.gz']
-        for suffix in tar_suffixes:
-            if path.endswith(suffix):
-                return TarArchive(path)
-
-    def __enter__(self):
-        archive_file = getattr(self, 'archive_file', None)
-        if hasattr(archive_file, '__enter__'):
-            archive_file.__enter__()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        archive_file = getattr(self, 'archive_file', None)
-        if hasattr(archive_file, '__exit__'):
-            archive_file.__exit__(exc_type, exc_val, exc_tb)
-        return self
-
-
-class TarArchive(Archive):
-    def __init__(self, path: str):
-        self.archive_file = tarfile.open(path)
-
-    @cached_property
-    def inner_paths(self) -> List[str]:
-        return self.archive_file.getnames()
-
-    def extract_as_bytes(self, inner_path: str) -> bytes:
-        return self.archive_file.extractfile(inner_path).read()
-
-    def open_inner_file(self, inner_path: str):
-        return self.archive_file.extractfile(inner_path)
-
-
-class ZipArchive(Archive):
-    def __init__(self, path: str):
-        self.archive_file = zipfile.ZipFile(path)
-
-    def __enter__(self):
-        self.archive_file.__enter__()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.archive_file.__exit__(exc_type, exc_val, exc_tb)
-
-    @cached_property
-    def inner_paths(self) -> List[str]:
-        return self.archive_file.namelist()
-
-    def extract_as_bytes(self, inner_path: str) -> bytes:
-        return self.archive_file.open(inner_path).read()
-
-    def open_inner_file(self, inner_path: str):
-        return self.archive_file.open(inner_path)
+warnings.warn(
+    _warning,
+    DeprecationWarning
+)
+__all__ = []
 
 
 class Directory:

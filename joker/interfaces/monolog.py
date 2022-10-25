@@ -67,6 +67,7 @@ class MonologInterface(HTTPClient):
         return urljoin(self.base_url, f'api/v1/{channel}')
 
     def add(self, channel: str, data: list):
+        """Add data to the monolog server"""
         url = self.fmt_url(channel)
         _logger.info(
             'pushing %r records to monolog channel %r, %r',
@@ -81,6 +82,7 @@ class MonologInterface(HTTPClient):
             since: str,
             limit: int = 1000,
             timeout: int = None) -> list[dict]:
+        """Fetch data from the monolog server"""
         url = self.fmt_url(channel)
         _logger.info(
             'pulling %r records from monolog channel %r since %r, %r',

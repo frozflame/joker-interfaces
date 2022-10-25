@@ -6,10 +6,22 @@ import os.path
 import shlex
 import subprocess
 import sys
+import warnings
 from glob import glob
 from typing import List
 
 from joker.interfaces.filesys import Directory
+
+_warning = """\
+joker.interfaces.repos is deprecated, 
+please use joker.filesys.git instead.
+"""
+
+warnings.warn(
+    _warning,
+    DeprecationWarning
+)
+__all__ = []
 
 
 def printcmd(cmd: List[str], **kwargs):
@@ -68,4 +80,4 @@ class Repository(Directory):
         return info
 
 
-__all__ = ['Repository']
+
