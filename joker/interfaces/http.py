@@ -7,9 +7,10 @@ import logging
 import shlex
 import traceback
 import urllib.parse
+from functools import cached_property
 from json import JSONDecodeError
 from typing import Union
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import requests
 from volkanic.errors import TechnicalError
@@ -65,6 +66,8 @@ def _decode_response(resp: requests.Response):
         raise TechnicalError('cannot decode json')
     if rd.code != 0:
         raise TechnicalError(f'error response ({rd.code})')
+    if rd.message:
+        _logger.info(rd.message)
     return rd.data
 
 
@@ -76,11 +79,27 @@ def decode_response(resp: requests.Response):
         raise
 
 
-class HTTPClient:
-    timeout = 30
+class _BaseHTTPClient:
+    @staticmethod
+    def _check_url(url: str):
+        path = urlparse(url).path
+        if path == '' or path.endswith('/'):
+            return
+        raise ValueError('service url path must end with "/"')
 
-    def __init__(self, base_url: str):
-        self.base_url = base_url
+    def __init__(self, url: str):
+        self._check_url(url)
+        self.base_url = url
+        c = self.__class__.__name__
+        _logger.info('new %s instance, %r', c, url)
+
+    @cached_property
+    def session(self):
+        return requests.session()
+
+
+class HTTPClient(_BaseHTTPClient):
+    timeout = 30
 
     def get_url(self, path: str):
         return urllib.parse.urljoin(self.base_url, path)
@@ -150,9 +169,11 @@ class HTTPClient:
         return self.json_request('POST', path, data=data, **kwargs)
 
 
+# will be removed in 0.2.0
 HTTPService = HTTPClient
 
 
+# deprecated; will be removed in 0.2.0
 class HTTPClientInterface:
     def __init__(self, config: dict):
         self._upstream_config = config
@@ -167,4 +188,5 @@ class HTTPClientInterface:
         return urljoin(base_url, path)
 
 
+# deprecated; will be removed in 0.2.0
 HTTPServiceInterface = HTTPClientInterface
