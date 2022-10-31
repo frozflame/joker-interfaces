@@ -24,7 +24,7 @@ class MonologInterface(_BaseHTTPClient):
             len(data), channel, url
         )
         resp = self.session.post(url, json=data)
-        _logger.info(resp.text)
+        decode_response(resp)
 
     def pull(
             self,
