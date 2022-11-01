@@ -5,9 +5,7 @@ from __future__ import annotations
 import logging
 from urllib.parse import urljoin
 
-from joker.interfaces.http import (
-    _BaseHTTPClient, decode_response
-)
+from joker.interfaces.utils import decode_response, _BaseHTTPClient
 
 _logger = logging.getLogger(__name__)
 
