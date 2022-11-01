@@ -36,8 +36,8 @@ class FileStorageInterface:
         resp = self.session.post(url, files={'file': content})
         return resp.json()['data']
 
-    def load(self, key: str) -> bytes:
-        url = urllib.parse.urljoin(self.base_url, f'/files/{key}')
+    def load(self, cid: str) -> bytes:
+        url = urllib.parse.urljoin(self.base_url, f'/files/{cid}')
         resp = requests.get(url)
         return resp.content
 
