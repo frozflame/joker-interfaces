@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import shlex
 from functools import cached_property
 from json import JSONDecodeError
@@ -14,7 +15,7 @@ from joker.meta.utils import *
 from volkanic.errors import TechnicalError
 from volkanic.introspect import razor
 
-from joker.interfaces.http import _logger
+_logger = logging.getLogger(__name__)
 
 
 class ResponseDict(dict):

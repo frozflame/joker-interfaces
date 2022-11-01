@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os.path
 import urllib.parse
+import warnings
 from typing import Generator
 
 from joker.filesys.archives import (

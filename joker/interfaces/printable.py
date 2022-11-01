@@ -18,9 +18,9 @@ class PDFClient(_BaseHTTPClient):
         url = urllib.parse.urljoin(self.base_url, tpl_path)
         headers = {'Content-type': 'application/json'}
         payload = json.dumps(data, default=str)
+        _logger.info('initial url: %s', url)
         resp = requests.post(url, data=payload, headers=headers)
-        print('request-url:', url)
-        print('redirected-url:', resp.url)
+        _logger.info('redirected url:', resp.url)
         return resp.content, resp.url
 
     def generate(self, tpl_path: str, data: dict) -> bytes:
